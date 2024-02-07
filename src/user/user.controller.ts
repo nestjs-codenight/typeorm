@@ -6,6 +6,8 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
+  Put,
 } from "@nestjs/common";
 import {UserService} from "./user.service";
 import {CreateUserDto} from "./dto/create-user.dto";
@@ -16,17 +18,29 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post("/create")
-  create() {
-    return this.userService.create();
+  create(@Body() createDto: CreateUserDto) {
+    return this.userService.create(createDto);
   }
   @Post("/insert")
-  insert() {
-    return this.userService.insert();
+  insert(@Body() createDto: CreateUserDto) {
+    return this.userService.insert(createDto);
   }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  findAll(@Query("search") search: string) {
+    return this.userService.findAll(search);
+  }
+  @Get("/order")
+  orderData() {
+    return this.userService.orderData();
+  }
+  @Get("/pagination")
+  paginationUser(@Query() paginationDto: {page: number; limit: number}) {
+    return this.userService.pagination(paginationDto);
+  }
+  @Get("/selection")
+  selection() {
+    return this.userService.selection();
   }
 
   @Get(":id")
@@ -34,13 +48,21 @@ export class UserController {
     return this.userService.findOne(+id);
   }
 
-  @Patch(":id")
+  @Put("/edit/:id")
   update(@Param("id") id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);
   }
+  @Put(":id")
+  updateFields(@Param("id") id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.updateChangedFields(+id, updateUserDto);
+  }
 
-  @Delete(":id")
+  @Delete("/remove/:id")
   remove(@Param("id") id: string) {
     return this.userService.remove(+id);
+  }
+  @Delete("/delete/:id")
+  delete(@Param("id") id: string) {
+    return this.userService.delete(+id);
   }
 }
