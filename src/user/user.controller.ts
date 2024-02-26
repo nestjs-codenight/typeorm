@@ -8,10 +8,12 @@ import {
   Delete,
   Query,
   Put,
+  ParseIntPipe,
 } from "@nestjs/common";
 import {UserService} from "./user.service";
 import {CreateUserDto} from "./dto/create-user.dto";
 import {UpdateUserDto} from "./dto/update-user.dto";
+import {ProfileDto} from "./dto/profile.dto";
 
 @Controller("user")
 export class UserController {
@@ -25,10 +27,22 @@ export class UserController {
   insert(@Body() createDto: CreateUserDto) {
     return this.userService.insert(createDto);
   }
+  @Post("/profile")
+  createProfile(@Body() profileDto: ProfileDto) {
+    return this.userService.createProfile(profileDto);
+  }
 
   @Get()
   findAll(@Query("search") search: string) {
     return this.userService.findAll(search);
+  }
+  @Get("/blogs/:userId")
+  findAllBlogsOfUser(@Param("userId", ParseIntPipe) userId: number) {
+    return this.userService.blogsOfUser(userId);
+  }
+  @Get("/profile/:id")
+  findUserWithProfile(@Param("id") id: string) {
+    return this.userService.findUserWithProfile(+id);
   }
   @Get("/order")
   orderData() {

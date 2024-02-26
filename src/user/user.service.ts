@@ -6,20 +6,20 @@ import {UserEntity} from "./entities/user.entity";
 import {
   And,
   FindOptionsWhere,
-  ILike,
-  LessThan,
   LessThanOrEqual,
-  MoreThan,
   MoreThanOrEqual,
-  Not,
   Repository,
 } from "typeorm";
 import {isDate, isEmail, isNumber} from "class-validator";
-
+import {ProfileDto} from "./dto/profile.dto";
+import {ProfileEntity} from "./entities/profile.entity";
 @Injectable()
 export class UserService {
   constructor(
-    @InjectRepository(UserEntity) private userRepository: Repository<UserEntity>
+    @InjectRepository(UserEntity)
+    private userRepository: Repository<UserEntity>,
+    @InjectRepository(ProfileEntity)
+    private profileRepository: Repository<ProfileEntity>
   ) {}
   async create(createDto: CreateUserDto) {
     const {first_name, last_name, email, age} = createDto;
@@ -58,6 +58,14 @@ export class UserService {
       where,
     });
   }
+  async blogsOfUser(userId: number) {
+    return await this.userRepository.findOne({
+      where: {id: userId},
+      relations: {
+        blogs: true,
+      },
+    });
+  }
   async orderData() {
     return await this.userRepository.find({
       where: {},
@@ -93,13 +101,11 @@ export class UserService {
       select: ["id", "first_name", "last_name", "age"],
     });
   }
-
   async findOne(id: number) {
     const user = await this.userRepository.findOneBy({id});
     if (!user) throw new NotFoundException();
     return user;
   }
-
   async updateChangedFields(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
     const {age, email, first_name, last_name} = updateUserDto;
@@ -120,7 +126,6 @@ export class UserService {
       message: "updated successfully",
     };
   }
-
   async remove(id: number) {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
@@ -134,5 +139,40 @@ export class UserService {
     return {
       message: "deleted successfully",
     };
+  }
+  async createProfile(profileDto: ProfileDto) {
+    const {bio, photo, userId} = profileDto;
+    const user = await this.userRepository.findOneBy({id: userId});
+    if (user) {
+      const profile = await this.profileRepository.findOneBy({userId});
+      if (profile) {
+        if (bio) profile.bio = bio;
+        if (photo) profile.photo = photo;
+        await this.profileRepository.save(profile);
+      } else {
+        let newProfile = this.profileRepository.create({
+          bio,
+          photo,
+          userId,
+        });
+        newProfile = await this.profileRepository.save(newProfile);
+        user.profileId = newProfile.id;
+        await this.userRepository.save(user);
+      }
+      return {
+        message: "profile created./update successfully",
+      };
+    }
+    throw new NotFoundException();
+  }
+  async findUserWithProfile(id: number) {
+    const user = await this.userRepository.findOne({
+      where: {id},
+      relations: {
+        profile: true,
+      },
+    });
+    if (!user) throw new NotFoundException();
+    return user;
   }
 }
